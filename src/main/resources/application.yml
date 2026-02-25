@@ -1,0 +1,35 @@
+spring:
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/muse?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=utf8&useUnicode=true
+    username: muse
+    password: Muse1234!
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+
+app:
+  jwt:
+    secret: "0123456789abcdef0123456789abcdef0123456789abcdef"
+    expiration-minutes: 120
+
+
+# 🔹 KOPIS 설정
+exhibition:
+  base-url: "https://kopis.or.kr/openApi/restful/pblprfr"
+  service-key: "6d447b7564364fcfb1cf8d5820047c86"
+  default-page: 1
+  default-size: 100
+
+
+# 🔹 서울 열린데이터광장 설정 추가
+seoul:
+  base-url: "http://openapi.seoul.go.kr:8088"
+  service-key: "425047666b63686139307a42745a4f"
+  service-name: "culturalEventInfo"   # 실제 사용하는 서비스명으로 변경
+  start-index: 1
+  end-index: 100
