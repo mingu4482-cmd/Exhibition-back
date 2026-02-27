@@ -5,10 +5,14 @@ import requests
 from dotenv import load_dotenv
 
 load_dotenv()
+
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-KAKAO_API_KEY=os.getenv("KAKAO_API_KEY") # 카카오 API 키 (좌표 확보용)
-KAKAO_REST_API_KEY = os.getenv("KAKAO_REST_API_KEY")
+
+KAKAO_API_KEY = os.getenv("KAKAO_API_KEY")          # 카카오 Local API 키 (Category 검색)
+KAKAO_REST_API_KEY = os.getenv("KAKAO_REST_API_KEY") # 카카오 Local API 키 (Keyword 검색)
+
 print("🚨🚨 파이썬이 읽은 키:", os.getenv("OPENAI_API_KEY"))
+
 # ==========================================
 # 1. 취향 태그 기반 전시회 추천 (초고속 매칭)
 # ==========================================
@@ -19,61 +23,65 @@ def recommend_exhibitions(user_tags, exhibition_list):
     """
     print(f"🤖 태그 매칭 추천 시작: 유저 취향 {user_tags}")
 
-    user_set = set(user_tags)
+    user_set = set(user_tags or [])
     scored_list = []
 
-    for exh in exhibition_list:
-        # DB에 저장된 "화려한, 웅장한" 문자열을 리스트(집합)로 변환
+    for exh in exhibition_list or []:
         db_tags_str = exh.get('hashtag') or ""
         exh_tags = set([t.strip() for t in db_tags_str.split(',') if t.strip()])
 
-        # 🚨 핵심: 유저 취향과 공연 태그가 몇 개나 겹치는지(교집합) 계산!
         match_count = len(user_set.intersection(exh_tags))
         exh['match_score'] = match_count
-
         scored_list.append(exh)
 
-    # 겹치는 태그가 많은 순으로 정렬 후 Top 3 반환
-    scored_list.sort(key=lambda x: x['match_score'], reverse=True)
+    scored_list.sort(key=lambda x: x.get('match_score', 0), reverse=True)
     return scored_list[:3]
-import os
 
+
+# ==========================================
+# 1-1. 다국어 AI 도슨트 (Vision -> Script -> TTS)
+# ==========================================
 def generate_multilingual_docent(image_url, lang="ko"):
     """
     image_url: 사용자가 찍은 작품 사진 URL
-    lang: 'ko', 'en', 'ja', 'ch' (선택된 언어)
+    lang: 'ko', 'en', 'ja', 'ch'
     """
+    lang = (lang or "ko").strip().lower()
     print(f"🎤 AI 도슨트 생성 중... 언어: {lang} (스타일: Kind 고정)")
 
-# 1. 언어 정규화
-lang = (lang or "ko").strip().lower()
+    # 1) 언어 명칭 매핑
+    lang_map = {
+        "ko": "Korean",
+        "en": "English",
+        "ja": "Japanese",
+        "ch": "Chinese",
+    }
+    target_lang = lang_map.get(lang, "Korean")
 
-# 2. 언어별 user 지시문
-user_prompt_map = {
-    "ko": "이 작품 사진을 분석해서 제목, 작가, 그리고 작품의 의미를 포함한 도슨트 해설을 300자 내외로 작성해줘. 특수기호는 빼고 자연스러운 구어체로 써줘.",
-    "en": "Analyze the artwork photo and write a docent-style explanation about 120-180 words. Include the title, artist, and meaning if identifiable. Do not use special characters. Use a natural spoken tone.",
-    "ja": "この作品写真を分析し、タイトル、作家、作品の意味を含めたドーセント解説を作成してください。自然な口語体で、記号は使わないでください。",
-    "ch": "请分析这张作品照片，撰写包含标题、作者及作品意义的讲解说明。使用自然口语，不要使用特殊符号。"
-}
+    # 2) 언어별 user 지시문 (여기가 핵심!)
+    user_prompt_map = {
+        "ko": "이 작품 사진을 분석해서 제목, 작가, 그리고 작품의 의미를 포함한 도슨트 해설을 300자 내외로 작성해줘. 특수기호는 빼고 자연스러운 구어체로 써줘.",
+        "en": "Analyze the artwork photo and write a docent-style explanation about 120 to 180 words. Include the title, artist, and meaning if identifiable. Avoid special characters. Use a natural spoken tone.",
+        "ja": "この作品写真を分析し、タイトル、作家、作品の意味を含めたドーセント解説を作成してください。自然な口語体で、記号は使わないでください。",
+        "ch": "请分析这张作品照片，撰写包含标题、作者及作品意义的讲解说明。使用自然口语，不要使用特殊符号。",
+    }
+    user_text = user_prompt_map.get(lang, user_prompt_map["ko"])
 
-user_text = user_prompt_map.get(lang, user_prompt_map["ko"])
+    # 3) 시스템 프롬프트
+    system_prompt = f"""
+You are a professional museum docent. Explain the artwork/photo in the provided image.
+Make it engaging, friendly, and informative.
 
-    # 2. 페르소나 설정 (차분하고 우아한 도슨트로 고정)
-    system_prompt = (
-      # 2. 지시는 영어로 명확하게, 결과물은 target_language로 고정!
-      f"""
-      You are a professional museum docent. Explain the artwork/photo in the provided image.
-      Make it engaging, friendly, and informative.
+CRITICAL RULE:
+Your entire response MUST be written ONLY in {target_lang}.
+Do NOT mix languages. Do NOT use any language other than {target_lang}.
+If the user message is in a different language, ignore that and still respond ONLY in {target_lang}.
+""".strip()
 
-      🚨 [CRITICAL RULE]
-      Your entire response MUST be written ONLY in {target_lang}.
-      Do NOT mix languages. Do NOT use any language other than {target_lang}.
-      """
-    )
-    voice_model = "nova" # 차분하고 신뢰감 있는 보이스
+    voice_model = "nova"
 
     try:
-        # 3. GPT-4o Vision으로 사진 분석 및 대본 생성
+        # 4) Vision으로 스크립트 생성
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
@@ -81,27 +89,23 @@ user_text = user_prompt_map.get(lang, user_prompt_map["ko"])
                 {
                     "role": "user",
                     "content": [
-                        {
-                            "type": "text",
-                            "text": user_text
-                        },
-                        {"type": "image_url", "image_url": {"url": image_url}}
-                    ]
-                }
+                        {"type": "text", "text": user_text},
+                        {"type": "image_url", "image_url": {"url": image_url}},
+                    ],
+                },
             ],
-            max_tokens=500
+            max_tokens=500,
         )
 
-        script = response.choices[0].message.content.strip()
+        script = (response.choices[0].message.content or "").strip()
 
-        # 4. OpenAI TTS로 음성 생성
+        # 5) TTS 생성
         audio_res = client.audio.speech.create(
             model="tts-1",
             voice=voice_model,
-            input=script
+            input=script,
         )
 
-        # 파일명 생성 (언어와 이미지 경로 해시값 조합)
         os.makedirs("audio", exist_ok=True)
         filename = f"audio/docent_{lang}_{hash(image_url)}.mp3"
         audio_res.write_to_file(filename)
@@ -111,6 +115,7 @@ user_text = user_prompt_map.get(lang, user_prompt_map["ko"])
     except Exception as e:
         print(f"❌ 다국어 도슨트 생성 중 에러: {e}")
         return None, None
+
 
 # ==========================================
 # 2. 카카오맵 API 연동: 근처 실제 맛집/카페 찾기
@@ -125,22 +130,24 @@ def get_kakao_nearby_place(lat, lng, category_group_code):
         "category_group_code": category_group_code,
         "y": lat,
         "x": lng,
-        "radius": 1000, # 반경 1km 이내
-        "sort": "accuracy" # 정확도순 (또는 'distance' 거리순 가능)
+        "radius": 1000,
+        "sort": "accuracy",
     }
 
     try:
         res = requests.get(url, headers=headers, params=params, timeout=5).json()
-        if res.get('documents'):
-            # 가장 상위에 검색된 1곳의 정보만 반환
-            place = res['documents'][0]
-            return {"name": place['place_name'], "url": place['place_url'], "distance": place['distance']}
+        if res.get("documents"):
+            place = res["documents"][0]
+            return {
+                "name": place["place_name"],
+                "url": place["place_url"],
+                "distance": place["distance"],
+            }
     except Exception as e:
         print(f"❌ 카카오 API 호출 실패: {e}")
     return None
 
 
-# 1. 카카오 키워드 검색 함수 (맛집, 카페 찾기용)
 def get_kakao_place_by_keyword(keyword, category_code):
     """
     keyword: 검색어 (예: '성수 맛집')
@@ -151,85 +158,87 @@ def get_kakao_place_by_keyword(keyword, category_code):
     params = {
         "query": keyword,
         "category_group_code": category_code,
-        "size": 1  # 가장 연관성 높은 1곳만 선정
+        "size": 1,
     }
 
     try:
-        res = requests.get(url, headers=headers, params=params)
+        res = requests.get(url, headers=headers, params=params, timeout=5)
         data = res.json()
-        if data['documents']:
-            place = data['documents'][0]
+        if data.get("documents"):
+            place = data["documents"][0]
             return {
-                "name": place['place_name'],
-                "address": place['address_name'],
-                "url": place['place_url'],  # ⭐ Open Map 버튼에 쓸 카카오맵 주소
-                "lat": place['y'],
-                "lng": place['x']
+                "name": place["place_name"],
+                "address": place.get("address_name") or place.get("road_address_name") or "",
+                "url": place["place_url"],
+                "lat": place["y"],
+                "lng": place["x"],
             }
     except Exception as e:
         print(f"❌ 카카오 검색 에러 ({keyword}): {e}")
     return None
 
-# 2. 지역 & 동행자 기반 코스 생성 로직 (전시회 포함)
+
 def generate_course_text_v3(destination, who, exhibition):
-    # 1. 전시 데이터가 있을 때와 없을 때를 명확히 구분
     if exhibition:
-        exh_info = f"전시 제목: {exhibition['title']}, 장소: {exhibition['place_name']}"
-        search_base = exhibition['place_name'] # 맛집 검색 기준점
+        exh_info = f"전시 제목: {exhibition.get('title')}, 장소: {exhibition.get('place_name')}"
+        search_base = exhibition.get("place_name") or destination
     else:
-        # DB에 없을 경우 GPT에게 가짜를 만들지 말라고 경고합니다.
         exh_info = "현재 해당 지역에 등록된 특정 전시회가 없음"
         search_base = destination
 
-    # 2. 실제 맛집/카페 데이터 가져오기 (카카오 API)
     restaurant = get_kakao_place_by_keyword(f"{search_base} 맛집", "FD6")
     cafe = get_kakao_place_by_keyword(f"{search_base} 카페", "CE7")
 
-    # 3. GPT 프롬프트 (강력한 제약 조건 추가)
     prompt = f"""
-    당신은 나들이 가이드입니다. 아래 제공된 [실제 정보]만을 사용하여 코스를 짜주세요.
-    절대로 존재하지 않는 전시회나 장소를 지어내지 마세요.
+당신은 나들이 가이드입니다. 아래 제공된 [실제 정보]만을 사용하여 코스를 짜주세요.
+절대로 존재하지 않는 전시회나 장소를 지어내지 마세요.
 
-    [실제 정보]
-    - 지역: {destination}
-    - 타겟: {who}
-    - 제공된 전시: {exh_info}
-    - 제공된 식당: {restaurant['name'] if restaurant else '정보 없음'}
-    - 제공된 카페: {cafe['name'] if cafe else '정보 없음'}
+[실제 정보]
+- 지역: {destination}
+- 타겟: {who}
+- 제공된 전시: {exh_info}
+- 제공된 식당: {restaurant['name'] if restaurant else '정보 없음'}
+- 제공된 카페: {cafe['name'] if cafe else '정보 없음'}
 
-    [지침]
-    1. 만약 '제공된 전시'가 '정보 없음'이라면, 전시 관람 대신 '{destination}' 거리 산책을 추천하세요.
-    2. 모든 장소 명칭은 위 [실제 정보]에 적힌 이름 그대로 사용하세요.
-    3. {who}의 취향에 맞춰 200자 이내로 다정하게 써주세요.
-    """
+[지침]
+1. 만약 '제공된 전시'가 '정보 없음'이라면, 전시 관람 대신 '{destination}' 거리 산책을 추천하세요.
+2. 모든 장소 명칭은 위 [실제 정보]에 적힌 이름 그대로 사용하세요.
+3. {who}의 취향에 맞춰 200자 이내로 다정하게 써주세요.
+""".strip()
+
     response = client.chat.completions.create(
         model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}]
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=300,
     )
 
-    story = response.choices[0].message.content.strip()
+    story = (response.choices[0].message.content or "").strip()
 
-    # 4. 프론트엔드가 쓰기 좋게 최종 결과 반환
+    # None 방어 (restaurant/cafe가 None이면 접근하면 터짐)
+    safe_rest = restaurant or {"name": "정보 없음", "address": "", "url": "#"}
+    safe_cafe = cafe or {"name": "정보 없음", "address": "", "url": "#"}
+    safe_exh = exhibition or {"title": "정보 없음", "place_name": "정보 없음", "url": "#"}
+
     return {
-    "story": story, # 전체 스토리
-    "places": {
-        "restaurant": {
-            "name": restaurant['name'],
-            "address": restaurant['address'],
-            "desc": "아띠의 식당 추천 이유", # 👈 이런 식의 필드 추가
-            "url": restaurant['url']
+        "story": story,
+        "places": {
+            "restaurant": {
+                "name": safe_rest["name"],
+                "address": safe_rest.get("address", ""),
+                "desc": "아띠의 식당 추천 이유",
+                "url": safe_rest.get("url", "#"),
+            },
+            "exhibition": {
+                "name": safe_exh.get("title", "정보 없음"),
+                "address": safe_exh.get("place_name", "정보 없음"),
+                "desc": "아띠의 전시 / 공연 추천 이유",
+                "url": safe_exh.get("url", "#"),
+            },
+            "cafe": {
+                "name": safe_cafe["name"],
+                "address": safe_cafe.get("address", ""),
+                "desc": "아띠의 카페 추천 이유",
+                "url": safe_cafe.get("url", "#"),
+            },
         },
-        "exhibition": {
-            "name": exhibition['title'] if exhibition else "정보 없음",
-            "address": exhibition['place_name'] if exhibition else "정보 없음",
-            "desc": "아띠의 전시 / 공연 추천 이유", # 👈 이런 식의 필드 추가
-            "url": exhibition['url'] if exhibition else "#"
-        },
-        "cafe": {
-            "name": cafe['name'],
-            "address": cafe['address'],
-            "desc": "아띠의 카페 추천 이유",
-            "url": cafe['url']
-        }
     }
-}
