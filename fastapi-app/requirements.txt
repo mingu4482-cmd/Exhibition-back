@@ -1,2 +1,16 @@
 fastapi
-uvicorn
+uvicorn[standard]
+python-multipart
+
+openai
+python-dotenv
+scikit-learn
+numpy
+pandas
+
+requests
+beautifulsoup4
+selenium
+webdriver-manager
+lxml
+pymysql
