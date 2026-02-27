@@ -7,6 +7,7 @@ from pydantic import BaseModel
 import pymysql
 import os
 import uvicorn
+import base64
 
 # 🚨 1. 우리가 만든 DB와 AI 함수들 불러오기
 
@@ -81,18 +82,18 @@ class DocentReq(BaseModel):
 @app.post("/api/ai/docent")
 async def api_docent(
     file: UploadFile = File(...),
-    lang: str = Form(...)  # 'ko', 'en', 'ja', 'zh'
+    lang: str = Form(...)
 ):
-    # 1. 파일을 서버에 임시 저장하거나 S3에 업로드 (여기서는 임시 저장 예시)
-    temp_path = f"temp_{file.filename}"
-    with open(temp_path, "wb") as buffer:
-        buffer.write(await file.read())
+    # 1. 사진을 파일로 저장하지 않고, 바로 읽어서 글자(Base64)로 변환!
+    file_content = await file.read()
+    base64_image = base64.b64encode(file_content).decode('utf-8')
 
-    # 2. 이미지 URL 생성 (실제 배포 시에는 S3 URL 권장)
-    image_url = f"http://54.180.234.226:8000/{temp_path}"
+    # 2. OpenAI가 좋아하는 "데이터 URL" 형식으로 만들기
+    # (주의: 파일 확장자에 따라 image/jpeg, image/png 등으로 자동 인식됨)
+    image_data = f"data:{file.content_type};base64,{base64_image}"
 
-    # 3. 다국어 도슨트 실행
-    result = generate_multilingual_docent(image_url, lang)
+    # 3. 다국어 도슨트 실행 (인터넷 주소 대신, 사진 데이터 자체를 넘겨줌)
+    result = generate_multilingual_docent(image_data, lang)
 
     return {"status": "success", "data": result}
 
