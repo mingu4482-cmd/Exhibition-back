@@ -56,8 +56,15 @@ def generate_multilingual_docent(image_url, lang="ko"):
 
     # 2. 페르소나 설정 (차분하고 우아한 도슨트로 고정)
     system_prompt = (
-        f"너는 미술관의 차분하고 우아한 수석 도슨트야. "
-        f"모든 설명을 반드시 {target_lang}로 작성하고, 대본과 오디오 음성을 {target_lang}으로 맞추고 관람객에게 다정하게 존댓말로 설명해줘."
+      # 2. 지시는 영어로 명확하게, 결과물은 target_language로 고정!
+      f"""
+      You are a professional museum docent. Explain the artwork/photo in the provided image.
+      Make it engaging, friendly, and informative.
+
+      🚨 [CRITICAL RULE]
+      Your entire response MUST be written ONLY in {target_lang}.
+      Do NOT mix languages. Do NOT use any language other than {target_lang}.
+      """
     )
     voice_model = "nova" # 차분하고 신뢰감 있는 보이스
 
