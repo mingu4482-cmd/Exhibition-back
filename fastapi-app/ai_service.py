@@ -45,14 +45,18 @@ def generate_multilingual_docent(image_url, lang="ko"):
     """
     print(f"🎤 AI 도슨트 생성 중... 언어: {lang} (스타일: Kind 고정)")
 
-    # 1. 언어 명칭 매핑
-    lang_map = {
-        "ko": "Korean",
-        "en": "English",
-        "ja": "Japanese",
-        "ch": "Chinese"
-    }
-    target_lang = lang_map.get(lang, "Korean")
+# 1. 언어 정규화
+lang = (lang or "ko").strip().lower()
+
+# 2. 언어별 user 지시문
+user_prompt_map = {
+    "ko": "이 작품 사진을 분석해서 제목, 작가, 그리고 작품의 의미를 포함한 도슨트 해설을 300자 내외로 작성해줘. 특수기호는 빼고 자연스러운 구어체로 써줘.",
+    "en": "Analyze the artwork photo and write a docent-style explanation about 120-180 words. Include the title, artist, and meaning if identifiable. Do not use special characters. Use a natural spoken tone.",
+    "ja": "この作品写真を分析し、タイトル、作家、作品の意味を含めたドーセント解説を作成してください。自然な口語体で、記号は使わないでください。",
+    "ch": "请分析这张作品照片，撰写包含标题、作者及作品意义的讲解说明。使用自然口语，不要使用特殊符号。"
+}
+
+user_text = user_prompt_map.get(lang, user_prompt_map["ko"])
 
     # 2. 페르소나 설정 (차분하고 우아한 도슨트로 고정)
     system_prompt = (
@@ -79,7 +83,7 @@ def generate_multilingual_docent(image_url, lang="ko"):
                     "content": [
                         {
                             "type": "text",
-                            "text": "이 작품 사진을 분석해서 제목, 작가, 그리고 작품의 의미를 포함한 도슨트 해설을 300자 내외로 작성해줘. 특수기호는 빼고 자연스러운 구어체로 써줘."
+                            "text": user_text
                         },
                         {"type": "image_url", "image_url": {"url": image_url}}
                     ]
