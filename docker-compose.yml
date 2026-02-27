@@ -1,0 +1,23 @@
+version: "3.8"
+
+services:
+  fastapi:
+    build: ./fastapi-app
+    container_name: muse-fastapi
+    ports:
+      - "8000:8000"
+    restart: always
+
+  spring:
+    build: .
+    container_name: muse-spring
+    ports:
+      - "8080:8080"
+    restart: always
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://gateway01.ap-northeast-1.prod.aws.tidbcloud.com:4000/test?useSSL=true&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true&characterEncoding=utf8&useUnicode=true
+      SPRING_DATASOURCE_USERNAME: 2U4xYtkqfE9KuPV.root
+      SPRING_DATASOURCE_PASSWORD: jAlb5pARLRdZGKLe
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - fastapi
