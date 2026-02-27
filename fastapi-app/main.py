@@ -1,4 +1,5 @@
 # main.py
+from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI,File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -22,7 +23,8 @@ origins = [
     "http://localhost:5173",
     "http://localhost:5174",      # 로컬 개발용 주소
 ]
-
+os.makedirs("audio", exist_ok=True) # 폴더가 없으면 에러나니까 자동 생성
+app.mount("/audio", StaticFiles(directory="audio"), name="audio")
 # 🚨 2. 프론트엔드 연동을 위한 CORS 설정 (리액트의 접근 허용)
 app.add_middleware(
     CORSMiddleware,

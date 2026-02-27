@@ -41,7 +41,7 @@ import os
 def generate_multilingual_docent(image_url, lang="ko"):
     """
     image_url: 사용자가 찍은 작품 사진 URL
-    lang: 'ko', 'en', 'ja', 'zh' (선택된 언어)
+    lang: 'ko', 'en', 'ja', 'ch' (선택된 언어)
     """
     print(f"🎤 AI 도슨트 생성 중... 언어: {lang} (스타일: Kind 고정)")
 
@@ -50,14 +50,14 @@ def generate_multilingual_docent(image_url, lang="ko"):
         "ko": "Korean",
         "en": "English",
         "ja": "Japanese",
-        "zh": "Chinese"
+        "ch": "Chinese"
     }
     target_lang = lang_map.get(lang, "Korean")
 
     # 2. 페르소나 설정 (차분하고 우아한 도슨트로 고정)
     system_prompt = (
         f"너는 미술관의 차분하고 우아한 수석 도슨트야. "
-        f"모든 설명을 반드시 {target_lang}로 작성하고, 관람객에게 다정하게 존댓말로 설명해줘."
+        f"모든 설명을 반드시 {target_lang}로 작성하고, 대본과 오디오 음성을 {target_lang}으로 맞추고 관람객에게 다정하게 존댓말로 설명해줘."
     )
     voice_model = "nova" # 차분하고 신뢰감 있는 보이스
 
