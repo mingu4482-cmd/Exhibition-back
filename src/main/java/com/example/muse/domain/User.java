@@ -1,6 +1,9 @@
 package com.example.muse.domain;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -26,16 +29,16 @@ public class User {
     @Column(length=30)
     private String nickname;
 
-    @Column(name="created_at")
+    @CreationTimestamp
+    @Column(name="created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    @UpdateTimestamp
     @Column(name="updated_at")
     private LocalDateTime updatedAt;
 
-    // 🔹 기본 생성자
     public User() {}
 
-    // 🔹 Getter / Setter 직접 작성
     public Long getId() { return id; }
 
     public String getEmail() { return email; }
@@ -54,8 +57,5 @@ public class User {
     public void setNickname(String nickname) { this.nickname = nickname; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
-
     public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 }

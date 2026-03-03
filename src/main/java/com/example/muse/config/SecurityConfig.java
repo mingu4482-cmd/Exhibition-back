@@ -19,16 +19,12 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-
         http
                 .csrf(csrf -> csrf.disable())
+                .cors(cors -> {}) // ✅ 추가
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
                 .authorizeHttpRequests(auth -> auth
-                        // ✅ 로그인/회원가입만 예외로 허용
                         .requestMatchers("/api/auth/**").permitAll()
-
-                        // ✅ 나머지 API들은 로그인 필요
                         .requestMatchers(
                                 "/api/me/**",
                                 "/api/favorites/**",
@@ -36,11 +32,8 @@ public class SecurityConfig {
                                 "/api/reviews/**",
                                 "/api/friends/**"
                         ).authenticated()
-
-                        // ✅ 그 외는 허용(예: 정적 리소스)
                         .anyRequest().permitAll()
                 )
-
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
