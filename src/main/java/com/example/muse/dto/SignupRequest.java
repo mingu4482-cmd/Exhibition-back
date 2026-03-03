@@ -27,4 +27,10 @@ public class SignupRequest {
 
     @Size(max = 30)
     private String nickname; // optional
+
+    /**
+     * 기본값 USER
+     * ADMIN 등 다른 값은 서비스에서 검증 필요
+     */
+    private String role = "USER";
 }
