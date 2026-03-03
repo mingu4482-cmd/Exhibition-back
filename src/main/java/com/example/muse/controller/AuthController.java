@@ -5,8 +5,6 @@ import com.example.muse.dto.SignupRequest;
 import com.example.muse.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -18,21 +16,20 @@ public class AuthController {
 
     private final AuthService authService;
 
-    // ✅ 회원가입: 프론트가 text로 받아도 OK
-    @PostMapping(value = "/signup", produces = MediaType.TEXT_PLAIN_VALUE)
-    public ResponseEntity<String> signup(@Valid @RequestBody SignupRequest req) {
+    // ✅ 회원가입 (프론트는 response.text()로 읽어도 OK)
+    @PostMapping("/signup")
+    public String signup(@Valid @RequestBody SignupRequest req) {
         authService.signup(req);
-        return ResponseEntity.ok("OK");
+        return "OK";
     }
 
-    // ✅ 로그인: 프론트가 response.text()로 "토큰 문자열"만 받게
-    @PostMapping(value = "/login", produces = MediaType.TEXT_PLAIN_VALUE)
-    public ResponseEntity<String> login(@Valid @RequestBody LoginRequest req) {
-        String token = authService.login(req.getEmail(), req.getPassword());
-        return ResponseEntity.ok(token);
+    // ✅ 로그인: 이메일/아이디 둘 다 가능 (LoginRequest의 login 필드 사용)
+    @PostMapping("/login")
+    public String login(@Valid @RequestBody LoginRequest req) {
+        return authService.login(req.getLogin(), req.getPassword());
     }
 
-    // ✅ 아이디 중복확인: 이미 프론트랑 맞음
+    // ✅ 아이디 중복확인: GET /api/auth/check-id?loginId=test1
     @GetMapping("/check-id")
     public Map<String, Object> checkId(@RequestParam String loginId) {
         boolean available = authService.isLoginIdAvailable(loginId);

@@ -81,17 +81,31 @@ public class AuthService {
      * 로그인
      */
     @Transactional(readOnly = true)
-    public String login(String email, String password) {
+    public String login(String login, String password) {
 
-        String e = normalizeEmail(email);
-        if (e == null) throw new IllegalArgumentException("이메일을 입력해주세요.");
-        if (password == null || password.isBlank()) throw new IllegalArgumentException("비밀번호를 입력해주세요.");
+        if (login == null || login.isBlank()) {
+            throw new IllegalArgumentException("이메일 또는 아이디를 입력해주세요.");
+        }
+        if (password == null || password.isBlank()) {
+            throw new IllegalArgumentException("비밀번호를 입력해주세요.");
+        }
 
-        User u = userRepository.findByEmail(e)
-                .orElseThrow(() -> new IllegalArgumentException("이메일/비밀번호가 올바르지 않습니다."));
+        String value = login.trim();
+        User u;
+
+        // 아주 단순하고 실용적인 판별: '@' 있으면 이메일로 본다
+        if (value.contains("@")) {
+            String email = value.toLowerCase();
+            u = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new IllegalArgumentException("이메일/아이디 또는 비밀번호가 올바르지 않습니다."));
+        } else {
+            String loginId = value;
+            u = userRepository.findByLoginId(loginId)
+                    .orElseThrow(() -> new IllegalArgumentException("이메일/아이디 또는 비밀번호가 올바르지 않습니다."));
+        }
 
         if (!passwordEncoder.matches(password, u.getPasswordHash())) {
-            throw new IllegalArgumentException("이메일/비밀번호가 올바르지 않습니다.");
+            throw new IllegalArgumentException("이메일/아이디 또는 비밀번호가 올바르지 않습니다.");
         }
 
         return jwtUtil.createToken(u.getEmail(), u.getRole());
