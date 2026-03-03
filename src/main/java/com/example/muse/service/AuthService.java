@@ -18,33 +18,55 @@ public class AuthService {
     private final JwtUtil jwtUtil;
 
     /**
+     * ✅ 아이디(loginId) 사용 가능 여부
+     * - true: 사용 가능 (중복 아님)
+     * - false: 사용 불가 (중복/형식오류)
+     */
+    @Transactional(readOnly = true)
+    public boolean isLoginIdAvailable(String loginId) {
+        if (loginId == null) return false;
+        String id = loginId.trim();
+        if (id.isEmpty()) return false;
+
+        return !userRepository.existsByLoginId(id);
+    }
+
+    /**
      * 회원가입
      */
     @Transactional
     public void signup(SignupRequest req) {
 
-        String email = req.getEmail().trim().toLowerCase();
-        String loginId = req.getLoginId().trim();
+        if (req == null) throw new IllegalArgumentException("요청 값이 비어있습니다.");
+
+        String email = normalizeEmail(req.getEmail());
+        String loginId = normalizeLoginId(req.getLoginId());
         String password = req.getPassword();
         String passwordConfirm = req.getPasswordConfirm();
-        String nickname = req.getNickname();
+        String nickname = normalizeNickname(req.getNickname());
 
-        // 1️⃣ 비밀번호 확인 체크
+        // 1) 필수값 체크
+        if (email == null) throw new IllegalArgumentException("이메일을 입력해주세요.");
+        if (loginId == null) throw new IllegalArgumentException("아이디를 입력해주세요.");
+        if (password == null || password.isBlank()) throw new IllegalArgumentException("비밀번호를 입력해주세요.");
+        if (passwordConfirm == null || passwordConfirm.isBlank()) throw new IllegalArgumentException("비밀번호 확인을 입력해주세요.");
+
+        // 2) 비밀번호 확인
         if (!password.equals(passwordConfirm)) {
             throw new IllegalArgumentException("비밀번호 확인이 일치하지 않습니다.");
         }
 
-        // 2️⃣ 이메일 중복 체크
+        // 3) 이메일 중복
         if (userRepository.existsByEmail(email)) {
             throw new IllegalArgumentException("이미 가입된 이메일입니다.");
         }
 
-        // 3️⃣ 아이디 중복 체크
+        // 4) 아이디 중복
         if (userRepository.existsByLoginId(loginId)) {
             throw new IllegalArgumentException("이미 사용 중인 아이디입니다.");
         }
 
-        // 4️⃣ 사용자 생성 (builder 없이)
+        // 5) 저장
         User u = new User();
         u.setEmail(email);
         u.setLoginId(loginId);
@@ -61,7 +83,9 @@ public class AuthService {
     @Transactional(readOnly = true)
     public String login(String email, String password) {
 
-        String e = email.trim().toLowerCase();
+        String e = normalizeEmail(email);
+        if (e == null) throw new IllegalArgumentException("이메일을 입력해주세요.");
+        if (password == null || password.isBlank()) throw new IllegalArgumentException("비밀번호를 입력해주세요.");
 
         User u = userRepository.findByEmail(e)
                 .orElseThrow(() -> new IllegalArgumentException("이메일/비밀번호가 올바르지 않습니다."));
@@ -71,6 +95,25 @@ public class AuthService {
         }
 
         return jwtUtil.createToken(u.getEmail(), u.getRole());
+    }
 
+    // ====== helpers ======
+
+    private String normalizeEmail(String email) {
+        if (email == null) return null;
+        String e = email.trim().toLowerCase();
+        return e.isEmpty() ? null : e;
+    }
+
+    private String normalizeLoginId(String loginId) {
+        if (loginId == null) return null;
+        String id = loginId.trim();
+        return id.isEmpty() ? null : id;
+    }
+
+    private String normalizeNickname(String nickname) {
+        if (nickname == null) return null;
+        String n = nickname.trim();
+        return n.isEmpty() ? null : n;
     }
 }
