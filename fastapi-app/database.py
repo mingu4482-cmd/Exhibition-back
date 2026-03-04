@@ -3,18 +3,17 @@ import pymysql
 from datetime import datetime, date
 
 # 🔐 DB 접속 정보 (여기에 직접 입력)
-DB_HOST='gateway01.ap-northeast-1.prod.aws.tidbcloud.com'
-DB_USER='2U4xYtkqfE9KuPV.root'
-DB_PASSWORD='jAlb5pARLRdZGKLe'
-DB_NAME='test'
-DB_PORT='4000'
-
+DB_HOST = "gateway01.ap-northeast-1.prod.aws.tidbcloud.com"
+DB_USER = "2U4xYtkqfE9KuPV.root"
+DB_PASSWORD = "jAlb5pARLRdZGKLe"
+DB_NAME = "test"
+DB_PORT = 4000  # ✅ int로!
 
 # 🔌 DB 연결 함수
 def get_connection():
     return pymysql.connect(
         host=DB_HOST,
-        port=DB_PORT,
+        port=DB_PORT,  # ✅ int
         user=DB_USER,
         password=DB_PASSWORD,
         db=DB_NAME,
@@ -22,7 +21,6 @@ def get_connection():
         cursorclass=pymysql.cursors.DictCursor,
         ssl={"check_hostname": False, "verify_mode": ssl.CERT_NONE},
     )
-
 
 def _to_date(v):
     if not v:
@@ -38,8 +36,6 @@ def _to_date(v):
             return None
     return None
 
-
-# 🏗️ 테이블 초기화
 def init_db():
     conn = get_connection()
     try:
@@ -69,23 +65,17 @@ def init_db():
             );
             """
             cursor.execute(sql)
-
         conn.commit()
         print("✅ DB 테이블(event) 초기화 완료!")
-
     except Exception as e:
         print(f"❌ 테이블 생성 실패: {e}")
-
     finally:
         conn.close()
 
-
-# 💾 데이터 저장
 def save_event(data: dict):
     conn = get_connection()
     try:
         with conn.cursor() as cursor:
-
             sql = """
             INSERT INTO event (
                 title, place_name, address, area,
@@ -113,31 +103,24 @@ def save_event(data: dict):
                 use_fee=VALUES(use_fee),
                 hashtag=VALUES(hashtag);
             """
-
             cursor.execute(sql, (
                 data.get("title"),
                 data.get("place_name"),
                 data.get("address"),
                 data.get("area"),
-
                 data.get("lat"),
                 data.get("lng"),
                 _to_date(data.get("start_date")),
                 _to_date(data.get("end_date")),
-
                 data.get("image_url"),
                 data.get("category"),
                 data.get("source"),
                 data.get("org_link"),
-
                 data.get("use_fee"),
-                data.get("hashtag")
+                data.get("hashtag"),
             ))
-
         conn.commit()
-
     except Exception as e:
         print(f"❌ 저장 에러 ({data.get('title')}): {e}")
-
     finally:
         conn.close()
