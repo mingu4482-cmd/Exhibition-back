@@ -16,19 +16,19 @@ public class VisitedController {
 
     private final VisitedService visitedService;
 
-    // ✅ 다녀온 전시 추가: POST /api/visited?performanceId=388
+    // ✅ 다녀온 전시 추가: POST /api/visited?EventId=388
     @PostMapping
-    public Map<String, Object> add(@RequestParam Long performanceId, Authentication auth) {
+    public Map<String, Object> add(@RequestParam Long EventId, Authentication auth) {
         String email = (String) auth.getPrincipal();
-        visitedService.addVisited(email, performanceId);
+        visitedService.addVisited(email, EventId);
         return Map.of("ok", true);
     }
 
-    // ✅ 다녀온 전시 삭제: DELETE /api/visited?performanceId=388
+    // ✅ 다녀온 전시 삭제: DELETE /api/visited?EventId=388
     @DeleteMapping
-    public Map<String, Object> remove(@RequestParam Long performanceId, Authentication auth) {
+    public Map<String, Object> remove(@RequestParam Long EventId, Authentication auth) {
         String email = (String) auth.getPrincipal();
-        visitedService.removeVisited(email, performanceId);
+        visitedService.removeVisited(email, EventId);
         return Map.of("ok", true);
     }
 

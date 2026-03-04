@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 public interface MyReviewItemResponse {
     Long getReviewId();
     Long getVisitedId();
-    Long getPerformanceId();
+    Long getEventId();
     String getTitle();
     String getPosterUrl();
     LocalDate getStartDate();

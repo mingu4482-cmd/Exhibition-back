@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
         uniqueConstraints = @UniqueConstraint(name = "uk_review_visited", columnNames = {"visited_id"}),
         indexes = {
                 @Index(name = "idx_review_user", columnList = "user_id"),
-                @Index(name = "idx_review_perf", columnList = "performance_id")
+                @Index(name = "idx_review_perf", columnList = "event_id")
         }
 )
 @Getter
@@ -32,8 +32,8 @@ public class Review {
     @Column(name="user_id", nullable = false)
     private Long userId;
 
-    @Column(name="performance_id", nullable = false)
-    private Long performanceId;
+    @Column(name="event_id", nullable = false)
+    private Long eventId;
 
     private Integer rating; // 1~5
 

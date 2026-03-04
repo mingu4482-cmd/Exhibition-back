@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 public record MyReviewItem(
         Long reviewId,
         Long visitedId,
-        Long performanceId,
+        Long EventId,
         String title,
         String posterUrl,
         Integer rating,

@@ -68,7 +68,7 @@ public class ReviewService {
         Review r = new Review();
         r.setVisitedId(v.getId());
         r.setUserId(userId);
-        r.setPerformanceId(v.getPerformanceId());
+        r.setEventId(v.getEventId());
         r.setRating(req.getRating());
         r.setContent(req.getContent() == null ? null : req.getContent().trim());
 

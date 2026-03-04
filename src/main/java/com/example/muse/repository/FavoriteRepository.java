@@ -11,24 +11,25 @@ import java.util.Optional;
 
 public interface FavoriteRepository extends JpaRepository<Favorite, Long> {
 
-    boolean existsByUserIdAndPerformanceId(Long userId, Long performanceId);
+    boolean existsByUserIdAndEventId(Long userId, Long eventId);
 
-    Optional<Favorite> findByUserIdAndPerformanceId(Long userId, Long performanceId);
+    Optional<Favorite> findByUserIdAndEventId(Long userId, Long eventId);
 
     List<Favorite> findAllByUserIdOrderByIdDesc(Long userId);
 
     long countByUserId(Long userId);
 
-    // ✅ 찜 목록(제목/포스터 포함) - favorite + performance JOIN
+    // ✅ 찜 목록 (favorite + event JOIN)
     @Query(value = """
         SELECT
-            f.performance_id AS performanceId,
-            p.title          AS title,
-            p.poster_url     AS posterUrl,
-            p.start_date     AS startDate,
-            p.end_date       AS endDate
+            f.event_id      AS eventId,
+            e.title         AS title,
+            e.image_url     AS imageUrl,
+            e.place_name    AS placeName,
+            e.start_date    AS startDate,
+            e.end_date      AS endDate
         FROM favorite f
-        JOIN performance p ON p.id = f.performance_id
+        JOIN event e ON e.id = f.event_id
         WHERE f.user_id = :userId
         ORDER BY f.id DESC
         """, nativeQuery = true)

@@ -26,24 +26,25 @@ public class FavoriteService {
     }
 
     @Transactional
-    public void addFavorite(String email, Long performanceId) {
+    public void addFavorite(String email, Long eventId) {
         Long userId = userIdByEmail(email);
 
-        if (favoriteRepository.existsByUserIdAndPerformanceId(userId, performanceId)) {
+        if (favoriteRepository.existsByUserIdAndEventId(userId, eventId)) {
             return;
         }
+
         Favorite f = new Favorite();
         f.setUserId(userId);
-        f.setPerformanceId(performanceId);
+        f.setEventId(eventId);
         f.setCreatedAt(LocalDateTime.now());
         favoriteRepository.save(f);
     }
 
     @Transactional
-    public void removeFavorite(String email, Long performanceId) {
+    public void removeFavorite(String email, Long eventId) {
         Long userId = userIdByEmail(email);
 
-        favoriteRepository.findByUserIdAndPerformanceId(userId, performanceId)
+        favoriteRepository.findByUserIdAndEventId(userId, eventId)
                 .ifPresent(favoriteRepository::delete);
     }
 

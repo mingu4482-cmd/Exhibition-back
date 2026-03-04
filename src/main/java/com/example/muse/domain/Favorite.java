@@ -7,12 +7,12 @@ import java.time.LocalDateTime;
 @Table(
         name = "favorite",
         uniqueConstraints = @UniqueConstraint(
-                name = "uk_favorite_user_perf",
-                columnNames = {"user_id", "performance_id"}
+                name = "uk_favorite_user_event",
+                columnNames = {"user_id", "event_id"}
         ),
         indexes = {
                 @Index(name = "idx_favorite_user", columnList = "user_id"),
-                @Index(name = "idx_favorite_perf", columnList = "performance_id")
+                @Index(name = "idx_favorite_event", columnList = "event_id")
         }
 )
 public class Favorite {
@@ -24,8 +24,8 @@ public class Favorite {
     @Column(name="user_id", nullable = false)
     private Long userId;
 
-    @Column(name="performance_id", nullable = false)
-    private Long performanceId;
+    @Column(name="event_id", nullable = false)
+    private Long eventId;
 
     @Column(name="created_at")
     private LocalDateTime createdAt;
@@ -37,8 +37,8 @@ public class Favorite {
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
 
-    public Long getPerformanceId() { return performanceId; }
-    public void setPerformanceId(Long performanceId) { this.performanceId = performanceId; }
+    public Long getEventId() { return eventId; }
+    public void setEventId(Long eventId) { this.eventId = eventId; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

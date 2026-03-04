@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 
 public record WritableReviewItem(
         Long visitedId,
-        Long performanceId,
+        Long EventId,
         String title,
         String posterUrl,
         LocalDate startDate,

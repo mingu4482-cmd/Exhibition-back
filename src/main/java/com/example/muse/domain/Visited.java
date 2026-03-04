@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
         name = "visited",
         uniqueConstraints = @UniqueConstraint(
                 name = "uk_user_performance",
-                columnNames = {"user_id", "performance_id"}
+                columnNames = {"user_id", "event_id"}
         )
 )
 @Getter
@@ -26,8 +26,8 @@ public class Visited {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(name = "performance_id", nullable = false)
-    private Long performanceId;
+    @Column(name = "event_id", nullable = false)
+    private Long eventId;
 
     @Column(name = "visited_at")
     private LocalDateTime visitedAt;

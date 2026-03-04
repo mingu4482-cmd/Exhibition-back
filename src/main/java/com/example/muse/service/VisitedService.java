@@ -26,26 +26,26 @@ public class VisitedService {
     }
 
     @Transactional
-    public void addVisited(String email, Long performanceId) {
+    public void addVisited(String email, Long EventId) {
         Long userId = userIdByEmail(email);
 
-        if (visitedRepository.existsByUserIdAndPerformanceId(userId, performanceId)) {
+        if (visitedRepository.existsByUserIdAndEventId(userId, EventId)) {
             return; // 이미 다녀온 기록이면 통과(원하면 에러 처리 가능)
         }
 
         Visited v = new Visited();
         v.setUserId(userId);
-        v.setPerformanceId(performanceId);
+        v.setEventId(EventId);
         v.setVisitedAt(LocalDateTime.now());
 
         visitedRepository.save(v);
     }
 
     @Transactional
-    public void removeVisited(String email, Long performanceId) {
+    public void removeVisited(String email, Long EventId) {
         Long userId = userIdByEmail(email);
 
-        visitedRepository.findByUserIdAndPerformanceId(userId, performanceId)
+        visitedRepository.findByUserIdAndEventId(userId, EventId)
                 .ifPresent(visitedRepository::delete);
     }
 

@@ -4,7 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public interface VisitedItemResponse {
-    Long getPerformanceId();
+    Long getEventId();
     String getTitle();
     String getPosterUrl();
     LocalDate getStartDate();
