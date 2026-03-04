@@ -1,5 +1,4 @@
 # main.py
-from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI,File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -23,8 +22,7 @@ origins = [
     "http://localhost:5173",
     "http://localhost:5174",      # 로컬 개발용 주소
 ]
-os.makedirs("audio", exist_ok=True) # 폴더가 없으면 에러나니까 자동 생성
-app.mount("/audio", StaticFiles(directory="audio"), name="audio")
+
 # 🚨 2. 프론트엔드 연동을 위한 CORS 설정 (리액트의 접근 허용)
 app.add_middleware(
     CORSMiddleware,
@@ -45,11 +43,60 @@ def get_events():
     try:
         with conn.cursor(pymysql.cursors.DictCursor) as cursor:
             # lat이 0이거나 빈칸인 '가짜 좌표'들 필터링
+            sql = """
+                SELECT
+                    id,
+                    title,
+                    place_name,
+                    address,
+                    area,
+                    lat,
+                    lng,
+                    start_date,
+                    end_date,
+                    image_url,
+                    category,
+                    source,
+                    org_link,
+                    use_fee,
+                    hashtag
+                FROM event
+                WHERE lat IS NOT NULL
+                  AND lng IS NOT NULL
+                  AND lat <> 0
+                  AND lng <> 0
+            """
+            cursor.execute(sql)
+            events = cursor.fetchall()
+        return {"status": "success", "total": len(events), "data": events}
+    finally:
+        conn.close()# ==========================================
+# 📡 [API 1] 전체 전시 목록 보내주기 (지도 및 전체 리스트용)
+# ==========================================
+@app.get("/api/events")
+def get_events():
+    conn = get_connection()
+    try:
+        with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            # lat이 0이거나 빈칸인 '가짜 좌표'들 필터링
             sql = """SELECT title, place_name, lat, lng, start_date, end_date, image_url, category as hashtag
                      FROM event
                      WHERE lat IS NOT NULL AND lat != '0' AND lat != '0.0'"""
             cursor.execute(sql)
             events = cursor.fetchall()
+
+        # 🚨 추가된 부분: 전체 리스트(지도) 데이터에도 카카오맵 URL 싹 다 붙여주기!
+        for event in events:
+            place = event.get("place_name", "전시장")
+            lat = event.get("lat")
+            lng = event.get("lng")
+
+            # 위도, 경도가 제대로 있으면 링크 생성해서 꽂아주기
+            if lat and lng:
+                event["directions_url"] = f"https://map.kakao.com/link/to/{place},{lat},{lng}"
+            else:
+                event["directions_url"] = ""
+
         return {"status": "success", "total": len(events), "data": events}
     finally:
         conn.close()
@@ -65,10 +112,33 @@ def api_recommend(req: RecommendReq):
     conn = get_connection()
     try:
         with conn.cursor(pymysql.cursors.DictCursor) as cursor:
-            cursor.execute("SELECT title, place_name, image_url, category as hashtag FROM event LIMIT 200")
+            # 🚨 수정 1: SELECT에 lat, lng를 추가하고, 좌표가 있는 것만 가져오게 필터링!
+            sql ="""
+                SELECT id, title, place_name, image_url, hashtag
+                FROM event
+                ORDER BY id DESC
+                LIMIT 200
+            """
+            cursor.execute(sql)
             all_events = cursor.fetchall()
 
+        # AI가 추천 전시를 골라줌
         results = recommend_exhibitions(req.tags, all_events)
+
+        print(f"🔥 AI가 찾은 결과 개수: {len(results)}개, 데이터: {results}")
+
+        # 🚨 수정 2: 프론트로 보내기 전에 카카오맵 URL 싹 다 조립해서 넣어주기!
+        for item in results:
+            place = item.get("place_name", "전시장")
+            lat = item.get("lat")
+            lng = item.get("lng")
+
+            # 위도, 경도가 제대로 있으면 링크 생성
+            if lat and lng:
+                item["directions_url"] = f"https://map.kakao.com/link/to/{place},{lat},{lng}"
+            else:
+                item["directions_url"] = "" # 혹시 좌표가 없으면 빈칸 처리
+
         return {"status": "success", "data": results}
     finally:
         conn.close()
@@ -113,23 +183,32 @@ def api_course(req: CourseReq):
     conn = get_connection()
     try:
         with conn.cursor(pymysql.cursors.DictCursor) as cursor:
-            # [DB 검색] 사용자가 입력한 지역에 있는 전시회 1개를 먼저 찾습니다.
-            # 주소(place_name)나 제목(title)에 검색어가 포함된 최신 전시를 가져옵니다.
             sql = """
-                SELECT title, place_name, lat, lng
+                SELECT id, title, place_name, lat, lng
                 FROM event
                 WHERE (place_name LIKE %s OR title LIKE %s)
-                AND lat != '0'
-                ORDER BY start_date DESC LIMIT 1
+                AND lat IS NOT NULL AND lng IS NOT NULL
+                AND lat <> 0 AND lng <> 0
+                ORDER BY start_date DESC, id DESC
+                LIMIT 1
             """
             cursor.execute(sql, (f"%{req.destination}%", f"%{req.destination}%"))
             exhibition = cursor.fetchone()
 
-        # [AI 호출]
-        # 전시회가 있으면 전시회 기반으로, 없으면 지역명 기반으로 코스를 짭니다.
-        # (ai_service.py에 새로 만든 v3 함수를 호출합니다.)
+        # 1. AI가 이미 { "story": "...", "places": {...} } 구조로 데이터를 만들어 줌
         plan = generate_course_text_v3(req.destination, req.who, exhibition)
 
+        # 2. 길찾기 링크(전시회 기준)를 plan 안에 바로 꽂아주기
+        if exhibition:
+            place = exhibition.get("place_name", "전시장")
+            lat = exhibition.get("lat")
+            lng = exhibition.get("lng")
+            # plan이라는 주머니에 directions_url이라는 칸을 새로 만듦
+            plan["directions_url"] = f"https://map.kakao.com/link/to/{place},{lat},{lng}"
+        else:
+            plan["directions_url"] = ""
+
+        # 3. 🚨 중요! return 할 때 plan(알맹이 전체)을 보냄
         return {"status": "success", "data": plan}
 
     except Exception as e:
