@@ -63,6 +63,7 @@ def get_events():
                   AND lat <> 0
                   AND lng <> 0
             """
+            cursor.execute(sql)
             events = cursor.fetchall()
 
         # ✅ 리스트(events)를 돌면서 각 row(dict)에 directions_url 추가
