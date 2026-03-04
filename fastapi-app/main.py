@@ -222,6 +222,19 @@ def show_map():
         }});
     </script></body></html>
     """
+@app.get("/api/db-test")
+def db_test():
+    try:
+        conn = get_connection()
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT 1")
+            result = cursor.fetchone()
+
+        conn.close()
+        return {"status": "success", "db": result}
+
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
