@@ -15,14 +15,18 @@ public class CorsConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // ✅ 프론트 개발 서버 허용
-        config.setAllowedOrigins(List.of("http://localhost:5173"));
-
-        // 필요하면 배포 프론트 도메인도 추가 가능
-        // config.setAllowedOrigins(List.of("http://localhost:5173", "https://your-frontend.com"));
+        // ✅ 로컬 + 배포 도메인 허용
+        config.setAllowedOrigins(List.of(
+                "http://localhost:5173",
+                "http://localhost:5174",
+                "https://my-mobile-test.vercel.app"
+        ));
 
         config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
+
+        // ✅ Authorization 헤더(토큰)도 확실히 허용
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
+
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
 

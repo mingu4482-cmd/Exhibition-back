@@ -20,13 +20,13 @@ repositories {
 
 dependencies {
 
-    // 🌱 Spring 기본
+    // 🌱 Spring 기본 (MVC)
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
-    // 🔥 WebClient 사용 위해 추가
-    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    // ✅ WebClient만 필요하면 "starter-webflux" 말고 이걸로!
+    implementation 'org.springframework:spring-webflux'
 
     // 🔐 Security
     implementation 'org.springframework.boot:spring-boot-starter-security'
@@ -39,10 +39,9 @@ dependencies {
     // XML 처리
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
 
-    // 🟡 Lombok (⭐ 중요: test용도 추가)
+    // 🟡 Lombok
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
-
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
 
