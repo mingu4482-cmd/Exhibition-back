@@ -4,7 +4,8 @@ import pymysql
 from dotenv import load_dotenv
 from datetime import datetime, date
 
-load_dotenv()
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # fastapi-app 폴더
+load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 # 🔌 DB 연결 함수
 def get_connection():

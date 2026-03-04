@@ -68,24 +68,6 @@ def get_event():
             """
             cursor.execute(sql)
             event = cursor.fetchall()
-        return {"status": "success", "total": len(event), "data": event}
-    finally:
-        conn.close()# ==========================================
-# 📡 [API 1] 전체 전시 목록 보내주기 (지도 및 전체 리스트용)
-# ==========================================
-@app.get("/api/event")
-def get_event():
-    conn = get_connection()
-    try:
-        with conn.cursor(pymysql.cursors.DictCursor) as cursor:
-            # lat이 0이거나 빈칸인 '가짜 좌표'들 필터링
-            sql = """SELECT title, place_name, lat, lng, start_date, end_date, image_url, category as hashtag
-                     FROM event
-                     WHERE lat IS NOT NULL AND lat != '0' AND lat != '0.0'"""
-            cursor.execute(sql)
-            event = cursor.fetchall()
-
-        # 🚨 추가된 부분: 전체 리스트(지도) 데이터에도 카카오맵 URL 싹 다 붙여주기!
         for event in event:
             place = event.get("place_name", "전시장")
             lat = event.get("lat")
