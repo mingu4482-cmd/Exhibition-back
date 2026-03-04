@@ -37,8 +37,8 @@ app.mount("/audio", StaticFiles(directory="audio"), name="audio")
 # ==========================================
 # 📡 [API 1] 전체 전시 목록 보내주기
 # ==========================================
-@app.get("/api/events")
-def get_events():
+@app.get("/api/event")
+def get_event():
     conn = get_connection()
     try:
         with conn.cursor(pymysql.cursors.DictCursor) as cursor:
@@ -67,14 +67,14 @@ def get_events():
                   AND lng <> 0
             """
             cursor.execute(sql)
-            events = cursor.fetchall()
-        return {"status": "success", "total": len(events), "data": events}
+            event = cursor.fetchall()
+        return {"status": "success", "total": len(event), "data": event}
     finally:
         conn.close()# ==========================================
 # 📡 [API 1] 전체 전시 목록 보내주기 (지도 및 전체 리스트용)
 # ==========================================
-@app.get("/api/events")
-def get_events():
+@app.get("/api/event")
+def get_event():
     conn = get_connection()
     try:
         with conn.cursor(pymysql.cursors.DictCursor) as cursor:
@@ -83,10 +83,10 @@ def get_events():
                      FROM event
                      WHERE lat IS NOT NULL AND lat != '0' AND lat != '0.0'"""
             cursor.execute(sql)
-            events = cursor.fetchall()
+            event = cursor.fetchall()
 
         # 🚨 추가된 부분: 전체 리스트(지도) 데이터에도 카카오맵 URL 싹 다 붙여주기!
-        for event in events:
+        for event in event:
             place = event.get("place_name", "전시장")
             lat = event.get("lat")
             lng = event.get("lng")
@@ -97,7 +97,7 @@ def get_events():
             else:
                 event["directions_url"] = ""
 
-        return {"status": "success", "total": len(events), "data": events}
+        return {"status": "success", "total": len(event), "data": event}
     finally:
         conn.close()
 
@@ -120,10 +120,10 @@ def api_recommend(req: RecommendReq):
                 LIMIT 200
             """
             cursor.execute(sql)
-            all_events = cursor.fetchall()
+            all_event = cursor.fetchall()
 
         # AI가 추천 전시를 골라줌
-        results = recommend_exhibitions(req.tags, all_events)
+        results = recommend_exhibitions(req.tags, all_event)
 
         print(f"🔥 AI가 찾은 결과 개수: {len(results)}개, 데이터: {results}")
 
@@ -229,7 +229,7 @@ def show_map():
     <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey={KAKAO_JS_KEY}"></script>
     <script>
         var map = new kakao.maps.Map(document.getElementById('map'), {{center: new kakao.maps.LatLng(37.5665, 126.9780), level: 7}});
-        fetch("/api/events").then(r => r.json()).then(res => {{
+        fetch("/api/event").then(r => r.json()).then(res => {{
             res.data.forEach(evt => {{
                 if (evt.lat && evt.lng) {{
                     var m = new kakao.maps.Marker({{ position: new kakao.maps.LatLng(evt.lat, evt.lng), map: map }});
